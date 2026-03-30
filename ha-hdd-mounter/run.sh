@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 CONFIG_PATH="/data/options.json"

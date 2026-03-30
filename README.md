@@ -43,6 +43,7 @@ wait_for_device_seconds: 60
 
 - If logs show `Can't open blockdev`, confirm the partition path from the host (for example with `ha hardware info`) and prefer `disk_uuid` to avoid device renames.
 - The add-on enters host mount + PID namespaces before mounting and auto-detects whether `nsenter --fork` is supported by the local util-linux version.
+- If logs stop at `s6-overlay-suexec: fatal: can only run as pid 1`, rebuild/update the add-on so the latest startup script is used.
 
 ## Important safety note
 
