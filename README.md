@@ -1,6 +1,4 @@
-# HA HDD Auto-Mount Add-on (prototype)
-
-Yes — this is possible on Home Assistant OS.
+# HA HDD Auto-Mount Add-on for Frigate Storage
 
 This repository contains a **starter Home Assistant add-on** that mounts a secondary disk/partition at boot, without modifying your OS SSD configuration.
 
@@ -23,7 +21,8 @@ HAOS itself is locked down, but a privileged add-on with host PID namespace can 
 3. Configure options in the add-on.
 4. Start add-on and check logs.
 
-## Example options (your requested setup)
+## Example options
+## Change for your drive which can be found using terminal command 'ha hardware info'
 
 ```yaml
 disk_path: "/dev/nvme0n1p1"
