@@ -1,4 +1,4 @@
-# HA HDD Auto-Mount Add-on (prototype)
+# HA HDD Auto-Mount Add-on (prototype) for FRIGATE
 
 This repository contains a **starter Home Assistant add-on** that mounts a secondary disk/partition at boot, without modifying your OS SSD configuration.
 
