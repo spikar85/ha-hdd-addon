@@ -42,7 +42,7 @@ wait_for_device_seconds: 60
 ## Troubleshooting
 
 - If logs show `Can't open blockdev`, confirm the partition path from the host (for example with `ha hardware info`) and prefer `disk_uuid` to avoid device renames.
-- The add-on now enters host mount + PID namespaces before mounting, which is required on some HAOS setups where mount from only the mount namespace can still fail to access block devices.
+- The add-on enters host mount + PID namespaces before mounting and auto-detects whether `nsenter --fork` is supported by the local util-linux version.
 
 ## Important safety note
 

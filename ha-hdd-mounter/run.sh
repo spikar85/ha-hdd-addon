@@ -18,7 +18,10 @@ require_cmd bash
 require_cmd nsenter
 require_cmd jq
 
-HOST_NS=(nsenter --target 1 --mount --pid --fork)
+HOST_NS=(nsenter --target 1 --mount --pid)
+if nsenter --help 2>&1 | grep -q -- '--fork'; then
+  HOST_NS+=(--fork)
+fi
 
 host_exec() {
   "${HOST_NS[@]}" -- "$@"
