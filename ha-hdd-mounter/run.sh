@@ -18,6 +18,19 @@ require_cmd bash
 require_cmd nsenter
 require_cmd jq
 
+HOST_NS=(nsenter --target 1 --mount --pid)
+if nsenter --help 2>&1 | grep -q -- '--fork'; then
+  HOST_NS+=(--fork)
+fi
+
+host_exec() {
+  "${HOST_NS[@]}" -- "$@"
+}
+
+host_sh() {
+  "${HOST_NS[@]}" -- sh -c "$1"
+}
+
 if [[ ! -f "$CONFIG_PATH" ]]; then
   log "Missing options file at $CONFIG_PATH"
   exit 1
@@ -44,18 +57,10 @@ fi
 
 log "Starting mount process for device=$DEVICE_PATH FS=$FS_TYPE"
 
-
-if ! nsenter --target 1 --mount -- test -b "$DEVICE_PATH"; then
-  log "Device exists path check failed for block device: $DEVICE_PATH"
-  log "Host /dev listing (filtered nvme/sd):"
-  nsenter --target 1 --mount -- sh -c 'ls -l /dev/nvme* /dev/sd* 2>/dev/null || true'
-  exit 1
-fi
-
 # Wait for device to appear on host.
 FOUND=0
 for ((i=1; i<=WAIT_SECONDS; i++)); do
-  if nsenter --target 1 --mount -- test -b "$DEVICE_PATH" >/dev/null 2>&1; then
+  if host_exec test -b "$DEVICE_PATH" >/dev/null 2>&1; then
     FOUND=1
     break
   fi
@@ -64,30 +69,37 @@ done
 
 if [[ "$FOUND" -ne 1 ]]; then
   log "Timed out waiting for $DEVICE_PATH after ${WAIT_SECONDS}s"
+  log "Host /dev listing (filtered nvme/sd):"
+  host_sh 'ls -l /dev/nvme* /dev/sd* 2>/dev/null || true'
   exit 1
 fi
 
 # Ensure mount point exists on host.
-nsenter --target 1 --mount -- mkdir -p "$MOUNT_POINT"
+host_exec mkdir -p "$MOUNT_POINT"
 
 # Mount only if not already mounted.
-if nsenter --target 1 --mount -- mountpoint -q "$MOUNT_POINT"; then
+if host_exec mountpoint -q "$MOUNT_POINT"; then
   log "Mount point already active: $MOUNT_POINT"
 else
   log "Mounting $DEVICE_PATH to $MOUNT_POINT"
-  nsenter --target 1 --mount -- mount -t "$FS_TYPE" -o "$MOUNT_OPTIONS" "$DEVICE_PATH" "$MOUNT_POINT"
+  if ! host_exec mount -t "$FS_TYPE" -o "$MOUNT_OPTIONS" "$DEVICE_PATH" "$MOUNT_POINT"; then
+    log "Mount failed. Host diagnostics:"
+    host_exec lsblk -f || true
+    host_exec blkid "$DEVICE_PATH" || true
+    exit 1
+  fi
 fi
 
 # Optional symlink for Frigate/media path convenience.
 if [[ -n "$SYMLINK_PATH" && "$SYMLINK_PATH" != "null" ]]; then
-  nsenter --target 1 --mount -- mkdir -p "$(dirname "$SYMLINK_PATH")"
-  if nsenter --target 1 --mount -- test -L "$SYMLINK_PATH"; then
+  host_exec mkdir -p "$(dirname "$SYMLINK_PATH")"
+  if host_exec test -L "$SYMLINK_PATH"; then
     log "Symlink already exists: $SYMLINK_PATH"
-  elif nsenter --target 1 --mount -- test -e "$SYMLINK_PATH"; then
+  elif host_exec test -e "$SYMLINK_PATH"; then
     log "Path exists and is not a symlink, leaving unchanged: $SYMLINK_PATH"
   else
     log "Creating symlink: $SYMLINK_PATH -> $MOUNT_POINT"
-    nsenter --target 1 --mount -- ln -s "$MOUNT_POINT" "$SYMLINK_PATH"
+    host_exec ln -s "$MOUNT_POINT" "$SYMLINK_PATH"
   fi
 fi
 

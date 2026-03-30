@@ -39,6 +39,11 @@ wait_for_device_seconds: 60
 - `disk_uuid`: optional; if set, it overrides `disk_path`.
 - `mount_point`: host path where the partition is mounted.
 
+## Troubleshooting
+
+- If logs show `Can't open blockdev`, confirm the partition path from the host (for example with `ha hardware info`) and prefer `disk_uuid` to avoid device renames.
+- The add-on enters host mount + PID namespaces before mounting and auto-detects whether `nsenter --fork` is supported by the local util-linux version.
+
 ## Important safety note
 
 Keep this set to your secondary storage partition only. Do not set it to OS partitions.
@@ -52,4 +57,3 @@ Use **Settings → Apps** (older versions: **Settings → Add-ons**) then open t
 - `https://github.com/spikar85/ha-hdd-addon`
 
 Then install **HA HDD Mounter for Frigate Storage** from the Add-on Store.
-
