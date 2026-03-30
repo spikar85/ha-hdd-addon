@@ -1,0 +1,36 @@
+name: "HA HDD Mounter for Frigate Storage"
+version: "0.1.1"
+slug: "ha_hdd_mounter"
+description: "Mount a secondary disk/partition on Home Assistant OS boot"
+url: "https://github.com/spikar85/ha-hdd-addon"
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: services
+boot: auto
+init: false
+hassio_api: false
+host_pid: true
+privileged:
+  - SYS_ADMIN
+map:
+  - addon_config:rw
+options:
+  disk_path: "/dev/nvme0n1p1"
+  disk_uuid: ""
+  fs_type: "ext4"
+  mount_point: "/mnt/data/frigate_storage"
+  mount_options: "defaults,noatime"
+  symlink_path: "/mnt/data/supervisor/media/frigate_storage"
+  wait_for_device_seconds: 60
+schema:
+  disk_path: str
+  disk_uuid: str?
+  fs_type: str
+  mount_point: str
+  mount_options: str
+  symlink_path: str?
+  wait_for_device_seconds: int(5,300)
