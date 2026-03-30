@@ -11,7 +11,7 @@ This repository contains a **starter Home Assistant add-on** that mounts a secon
 
 ## Why this approach works on HAOS
 
-HAOS itself is locked down, but a privileged add-on with host PID namespace can call `nsenter` and run `mount` **in the host namespace**. That gives controlled host-level mount behavior from an add-on lifecycle.
+HAOS itself is locked down, but a privileged add-on with host PID namespace can call `nsenter` and run `mount` **in the host namespace**. This add-on uses `full_access: true` + `udev: true` so host block devices are accessible for mounting.
 
 ## Install
 

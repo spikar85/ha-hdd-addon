@@ -44,10 +44,18 @@ fi
 
 log "Starting mount process for device=$DEVICE_PATH FS=$FS_TYPE"
 
+
+if ! nsenter --target 1 --mount -- test -b "$DEVICE_PATH"; then
+  log "Device exists path check failed for block device: $DEVICE_PATH"
+  log "Host /dev listing (filtered nvme/sd):"
+  nsenter --target 1 --mount -- sh -c 'ls -l /dev/nvme* /dev/sd* 2>/dev/null || true'
+  exit 1
+fi
+
 # Wait for device to appear on host.
 FOUND=0
 for ((i=1; i<=WAIT_SECONDS; i++)); do
-  if nsenter --target 1 --mount -- ls "$DEVICE_PATH" >/dev/null 2>&1; then
+  if nsenter --target 1 --mount -- test -b "$DEVICE_PATH" >/dev/null 2>&1; then
     FOUND=1
     break
   fi
