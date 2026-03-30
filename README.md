@@ -1,7 +1,5 @@
 # HA HDD Auto-Mount Add-on (prototype)
 
-Yes — this is possible on Home Assistant OS.
-
 This repository contains a **starter Home Assistant add-on** that mounts a secondary disk/partition at boot, without modifying your OS SSD configuration.
 
 ## What it does
