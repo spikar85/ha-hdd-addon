@@ -18,7 +18,7 @@ require_cmd bash
 require_cmd nsenter
 require_cmd jq
 
-HOST_NS=(nsenter --target 1 --mount --pid)
+HOST_NS=(nsenter --target 1 --mount)
 # Some nsenter versions support --fork while others only support --no-fork.
 # Avoid false positives from matching the --no-fork help text.
 if nsenter --help 2>&1 | grep -Eq -- '(^|[[:space:],])--fork([[:space:],=]|$)'; then
