@@ -19,7 +19,9 @@ require_cmd nsenter
 require_cmd jq
 
 HOST_NS=(nsenter --target 1 --mount --pid)
-if nsenter --help 2>&1 | grep -q -- '--fork'; then
+# Some nsenter versions support --fork while others only support --no-fork.
+# Avoid false positives from matching the --no-fork help text.
+if nsenter --help 2>&1 | grep -Eq -- '(^|[[:space:],])--fork([[:space:],=]|$)'; then
   HOST_NS+=(--fork)
 fi
 
@@ -74,6 +76,27 @@ if [[ "$FOUND" -ne 1 ]]; then
   exit 1
 fi
 
+# Validate block-device accessibility before attempting mount.
+if ! host_exec test -r "$DEVICE_PATH" >/dev/null 2>&1; then
+  log "Device exists but is not readable from host namespace: $DEVICE_PATH"
+  log "This is commonly caused by Home Assistant add-on Protection mode being enabled."
+  log "Disable Protection mode for this add-on, then restart it."
+  host_exec ls -l "$DEVICE_PATH" || true
+  exit 1
+fi
+
+# Optional filesystem auto-detection.
+if [[ -z "$FS_TYPE" || "$FS_TYPE" == "auto" || "$FS_TYPE" == "null" ]]; then
+  DETECTED_FS="$(host_sh "blkid -o value -s TYPE '$DEVICE_PATH' 2>/dev/null || true" | tr -d '\r\n')"
+  if [[ -n "$DETECTED_FS" ]]; then
+    FS_TYPE="$DETECTED_FS"
+    log "Auto-detected filesystem type: $FS_TYPE"
+  else
+    log "Could not auto-detect filesystem type for $DEVICE_PATH; using mount auto-detection"
+    FS_TYPE=""
+  fi
+fi
+
 # Ensure mount point exists on host.
 host_exec mkdir -p "$MOUNT_POINT"
 
@@ -82,10 +105,18 @@ if host_exec mountpoint -q "$MOUNT_POINT"; then
   log "Mount point already active: $MOUNT_POINT"
 else
   log "Mounting $DEVICE_PATH to $MOUNT_POINT"
-  if ! host_exec mount -t "$FS_TYPE" -o "$MOUNT_OPTIONS" "$DEVICE_PATH" "$MOUNT_POINT"; then
+  if [[ -n "$FS_TYPE" ]]; then
+    MOUNT_CMD=(mount -t "$FS_TYPE" -o "$MOUNT_OPTIONS" "$DEVICE_PATH" "$MOUNT_POINT")
+  else
+    MOUNT_CMD=(mount -o "$MOUNT_OPTIONS" "$DEVICE_PATH" "$MOUNT_POINT")
+  fi
+
+  if ! host_exec "${MOUNT_CMD[@]}"; then
     log "Mount failed. Host diagnostics:"
+    log "Hint: verify filesystem type and confirm Protection mode is disabled."
     host_exec lsblk -f || true
     host_exec blkid "$DEVICE_PATH" || true
+    host_exec ls -l "$DEVICE_PATH" || true
     exit 1
   fi
 fi
